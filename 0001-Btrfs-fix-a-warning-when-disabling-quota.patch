@@ -1,0 +1,46 @@
+From b1212f5b6ad4b86f7053da60e173c738c6d1a1a1 Mon Sep 17 00:00:00 2001
+From: Wang Shilong <wangsl-fnst@cn.fujitsu.com>
+Date: Thu, 28 Mar 2013 17:46:17 +0800
+Subject: [PATCH] Btrfs: fix a warning when disabling quota
+
+Steps to reproduce:
+	mkfs.btrfs <disk>
+	mount <disk> <mnt>
+	btrfs quota enable <mnt>
+	btrfs sub create <mnt>/subv
+
+	i=1
+	while [ $i -le 10000 ]
+	do
+		dd if=/dev/zero of=<mnt>/subv/data_$i bs=1K count=1
+		i=$(($i+1))
+		if [ $i -eq 500 ]
+		then
+			btrfs quota disable $mnt
+		fi
+	done
+	dmesg
+Obviously, this warn_on() is unnecessary, and it will be easily triggered.
+Just remove it.
+
+Signed-off-by: Wang Shilong <wangsl-fnst@cn.fujitsu.com>
+---
+ fs/btrfs/qgroup.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/fs/btrfs/qgroup.c b/fs/btrfs/qgroup.c
+index 14fca77..0d37b1f 100644
+--- a/fs/btrfs/qgroup.c
++++ b/fs/btrfs/qgroup.c
+@@ -423,8 +423,6 @@ void btrfs_free_qgroup_config(struct btrfs_fs_info *fs_info)
+ 		qgroup = rb_entry(n, struct btrfs_qgroup, node);
+ 		rb_erase(n, &fs_info->qgroup_tree);
+ 
+-		WARN_ON(!list_empty(&qgroup->dirty));
+-
+ 		while (!list_empty(&qgroup->groups)) {
+ 			list = list_first_entry(&qgroup->groups,
+ 						struct btrfs_qgroup_list,
+-- 
+1.7.7.6
+
