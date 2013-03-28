@@ -1,0 +1,49 @@
+From a2f5100a47b7ec27d2b621367ec4ab10e69a6f35 Mon Sep 17 00:00:00 2001
+From: Wang Shilong <wangsl-fnst@cn.fujitsu.com>
+Date: Fri, 29 Mar 2013 13:47:22 +0800
+Subject: [PATCH V2 0/6] add a mutex lock to avoid race condition and 
+	have all the ioctls check
+
+The original code has only one spin_lock 'qgroup_lock' to protect quota
+configurations on memory. If we want to add a BTRFS_QGROUP_INFO_KEY,
+it will be added to Btree firstly and then update quota configurations
+on memory, however,a race condition may happen between these operations.
+For example:
+	->add_qqroup_info_item()
+		->add_qgroup_rb()
+
+For the above case, del_qgroup_info_item() may happen before add_qgroup_rb().
+
+What's worse, when we want to add a qgroup relations:
+	->add_qgroup_relation_item()
+		->add_qgroup_relations()
+
+We don't have any checks whether 'src' and 'dst' exists before
+add_qgroup_relation_item(), a race condition can also happen for the above case.
+
+To avoid race conditions and have all the necessay checks, we introduce
+a mutex 'quota_lock', and we make all the user change operations protected by
+the mutex_lock.
+
+The benefit of mutex_lock is more, with a mutex lock, we can remove
+some spin_lock usages thus easing the burden of spin_lock 'qgroup_lock'.
+
+V1->V2:
+	use quota configurations on memory to speed up ioctl checks
+Wang Shilong (6):
+  Btrfs: introduce a mutex lock for btrfs quota operations
+  Btrfs: remove some unnecessary spin_lock usages
+  Btrfs: fix missing check before updating qgroup limit
+  Btrfs: fix missing check before creating/destroying a qgroup
+  Btrfs: fix missing check before assigning/removing qgroup relation
+  Btrfs: fix missing check before btrfs_qgroup_inherit()
+
+ fs/btrfs/ctree.h   |   10 +++
+ fs/btrfs/disk-io.c |    1 +
+ fs/btrfs/ioctl.c   |   43 ++++++++++----
+ fs/btrfs/qgroup.c  |  167 +++++++++++++++++++++++++++++++++-------------------
+ 4 files changed, 150 insertions(+), 71 deletions(-)
+
+-- 
+1.7.7.6
+
