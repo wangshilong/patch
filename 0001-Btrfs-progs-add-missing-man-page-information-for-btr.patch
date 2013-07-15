@@ -1,0 +1,42 @@
+From 2c2224f581676ca4df4f681f732b3e2be9383fb3 Mon Sep 17 00:00:00 2001
+From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+Date: Mon, 15 Jul 2013 13:49:59 +0800
+Subject: [PATCH 1/2] Btrfs-progs: add missing man page information for btrfsck
+
+Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+---
+ man/btrfsck.8.in | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/man/btrfsck.8.in b/man/btrfsck.8.in
+index 5004ba0..4e6c046 100644
+--- a/man/btrfsck.8.in
++++ b/man/btrfsck.8.in
+@@ -2,10 +2,23 @@
+ .SH NAME
+ btrfsck \- check a btrfs filesystem
+ .SH SYNOPSIS
+-.B btrfsck \fI device\fP
++.B btrfsck [options]\fI device\fP
+ .SH DESCRIPTION
+ \fBbtrfsck\fP is used to check a btrfs filesystem.
+ \fIdevice\fP is the device file where the filesystem is stored.
++
++\fB-s,--super <superblock>\fP
++        specify which superblock copy that you want to use.
++
++\fB--repair\fP
++        try to repair the filesystem.
++
++\fB--init-csum-tree\fP
++        create a new CRC tree.
++
++\fB--init-extent-tree\fP
++        create a new extent tree.
++
+ .SH AVAILABILITY
+ .B btrfsck
+ is part of btrfs-progs. Btrfs is currently under heavy development,
+-- 
+1.8.0.1
+

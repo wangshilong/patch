@@ -1,0 +1,63 @@
+From 41fb628311fd4684864a84b724a6e2ff103489d4 Mon Sep 17 00:00:00 2001
+From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+Date: Mon, 15 Jul 2013 15:03:44 +0800
+Subject: [PATCH 2/2] Btrfs-progs: add missing man information for
+ btrfs-debug-tree
+
+Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+---
+ man/Makefile              |  3 ++-
+ man/btrfs-debug-tree.8.in | 27 +++++++++++++++++++++++++++
+ 2 files changed, 29 insertions(+), 1 deletion(-)
+ create mode 100644 man/btrfs-debug-tree.8.in
+
+diff --git a/man/Makefile b/man/Makefile
+index 1ba23b5..e5c1f7c 100644
+--- a/man/Makefile
++++ b/man/Makefile
+@@ -11,7 +11,8 @@ man8dir = $(mandir)/man8
+ # list only those we use
+ .SUFFIXES: .in .gz
+ 
+-MANPAGES = mkfs.btrfs.8.gz btrfsck.8.gz btrfs-image.8.gz btrfs.8.gz
++MANPAGES = mkfs.btrfs.8.gz btrfsck.8.gz btrfs-image.8.gz btrfs.8.gz \
++	   btrfs-debug-tree.8.gz
+ INFILES = ${MANPAGES:.in=.gz}
+ 
+ all: $(MANPAGES)
+diff --git a/man/btrfs-debug-tree.8.in b/man/btrfs-debug-tree.8.in
+new file mode 100644
+index 0000000..d0e2e0b
+--- /dev/null
++++ b/man/btrfs-debug-tree.8.in
+@@ -0,0 +1,27 @@
++.TH BTRFS-DEBUG-TREE 8
++.SH NAME
++btrfs-debug-tree \- dump btrfs filesystem metadata into stdout.
++.SH SYNOPSIS
++.B btrfs-debug-tree [options]\fI device\fP
++.SH DESCRIPTION
++\fBbtrfs-debug-tree\fP is used to dump the whole tree of the given device.
++This is maybe useful for analyzing filesyste state or inconsistences and has
++a positive educational effect on understanding the internal structure.
++\fIdevice\fP is the device file where the filesystem is stored.
++
++\fB-e\fP print detailed extents info
++
++\fB-d\fP print info of btrfs device and root tree dirs only
++
++\fB-r\fP print info of roots only
++
++\fB-b <block_num>\fP print info of the specified block only
++
++.SH AVAILABILITY
++.B btrfs-debug-tree
++is part of btrfs-progs. Btrfs is currently under heavy development,
++and not suitable for any uses other than benchmarking and review.
++Please refer to the btrfs wiki http://btrfs.wiki.kernel.org for
++further details.
++.SH SEE ALSO
++.BR mkfs.btrfs (8)
+-- 
+1.8.0.1
+
