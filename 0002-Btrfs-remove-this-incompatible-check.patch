@@ -1,0 +1,29 @@
+From 04ed541f95a0cb9bb66b43a8095d73d652684251 Mon Sep 17 00:00:00 2001
+From: Wang Shilong <wangshilong1991@gmail.com>
+Date: Tue, 24 Sep 2013 23:27:37 +0800
+Subject: [PATCH 2/2] Btrfs: remove this incompatible check
+
+For Nari specify case, this check can be removed.
+---
+ fs/btrfs/disk-io.c | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 12db40d..447758b 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -382,11 +382,6 @@ int btrfs_check_super_csum(char *raw_disk_sb)
+ 
+ 		if (memcmp(raw_disk_sb, result, csum_size))
+ 			ret = 1;
+-
+-		if (ret && btrfs_super_generation(disk_sb) < 10) {
+-			printk(KERN_WARNING "btrfs: super block crcs don't match, older mkfs detected\n");
+-			ret = 0;
+-		}
+ 	}
+ 
+ 	if (csum_type >= ARRAY_SIZE(btrfs_csum_sizes)) {
+-- 
+1.7.11.7
+
