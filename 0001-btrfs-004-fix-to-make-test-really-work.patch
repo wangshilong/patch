@@ -1,0 +1,30 @@
+From a239d83d712578ee1ec78a4f4ff6c6c31ba863e6 Mon Sep 17 00:00:00 2001
+From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+Date: Mon, 10 Feb 2014 18:04:13 +0800
+Subject: [PATCH] btrfs/004: fix to make test really work
+
+---
+ tests/btrfs/004 | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/tests/btrfs/004 b/tests/btrfs/004
+index 14da9f1..5b62bdc 100755
+--- a/tests/btrfs/004
++++ b/tests/btrfs/004
+@@ -57,10 +57,9 @@ _require_command "/usr/sbin/filefrag"
+ 
+ rm -f $seqres.full
+ 
+-FILEFRAG_FILTER='if (/, blocksize (\d+)/) {$blocksize = $1; next} ($ext, '\
+-'$logical, $physical, $expected, $length, $flags) = (/^\s*(\d+)\s+(\d+)'\
+-'\s+(\d+)\s+(?:(\d+)\s+)?(\d+)\s+(.*)/) or next; $flags =~ '\
+-'/(?:^|,)inline(?:,|$)/ and next; print $physical * $blocksize, "#", '\
++FILEFRAG_FILTER='if (/blocks of (\d+) bytes/) {$blocksize = $1; next} ($ext, '\
++'$logical, $physical, $length) = (/^\s*(\d+):\s+(\d+)..\s+\d+:'\
++'\s+(\d+)..\s+\d+:\s+(\d+):/); print $physical * $blocksize, "#", '\
+ '$length * $blocksize, "#", $logical * $blocksize, " "'
+ 
+ # this makes filefrag output script readable by using a perl helper.
+-- 
+1.8.3.1
+
