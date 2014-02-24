@@ -1,0 +1,89 @@
+From a0052b5b73283e0ddfd85beb211bf615a86151d0 Mon Sep 17 00:00:00 2001
+From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+Date: Tue, 25 Feb 2014 00:17:48 +0800
+Subject: [PATCH 1/2] Btrfs-progs: fsck: fix screw up when using
+ --init-extent-tree option
+
+To reinit extent tree, we have to pin down all metadata blocks so that
+we don't overwrite existing metadata blocks.
+
+However, previous way is not really working right, after commiting
+transaction, we will call finish_extent_commit() which will unpin all
+metadata blocks we have pinned before, this will make it unsafe to allocate
+new blocks.
+
+So the fixing way is simple, we introduce a global flag into @fs_info,
+and we won't unpin extent until close ctree.
+
+Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+---
+ cmds-check.c | 13 ++++++++++++-
+ ctree.h      |  1 +
+ disk-io.c    |  7 +++++--
+ 3 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/cmds-check.c b/cmds-check.c
+index 253569f..d2b7203 100644
+--- a/cmds-check.c
++++ b/cmds-check.c
+@@ -6474,8 +6474,13 @@ int cmd_check(int argc, char **argv)
+ 		ret = -EIO;
+ 		goto close_out;
+ 	}
+-
+ 	if (init_extent_tree) {
++		/*
++		 * by setting this global flag, commit transaction
++		 * won't unpin extent state so that we wont' overwrite
++		 * existing metadata during fsck repair.
++		 */
++		info->fsck_init_extent_tree = 1;
+ 		printf("Creating a new extent tree\n");
+ 		ret = reinit_extent_tree(info);
+ 		if (ret)
+@@ -6602,6 +6607,12 @@ out:
+ 
+ 	free_root_recs_tree(&root_cache);
+ close_out:
++	/*
++	 * clear global flag so that commit transaction
++	 * will call btrfs_finish_extent_commit()
++	 */
++	if (init_extent_tree)
++		info->fsck_init_extent_tree = 0;
+ 	close_ctree(root);
+ err_out:
+ 	return ret;
+diff --git a/ctree.h b/ctree.h
+index 3cc3477..1144a59 100644
+--- a/ctree.h
++++ b/ctree.h
+@@ -987,6 +987,7 @@ struct btrfs_fs_info {
+ 	int readonly;
+ 	int on_restoring;
+ 	int is_chunk_recover;
++	int fsck_init_extent_tree;
+ 	int (*free_extent_hook)(struct btrfs_trans_handle *trans,
+ 				struct btrfs_root *root,
+ 				u64 bytenr, u64 num_bytes, u64 parent,
+diff --git a/disk-io.c b/disk-io.c
+index e840177..604ad16 100644
+--- a/disk-io.c
++++ b/disk-io.c
+@@ -494,8 +494,11 @@ commit_tree:
+ 	ret = __commit_transaction(trans, root);
+ 	BUG_ON(ret);
+ 	write_ctree_super(trans, root);
+-	btrfs_finish_extent_commit(trans, fs_info->extent_root,
+-			           &fs_info->pinned_extents);
++
++	if (!root->fs_info->fsck_init_extent_tree)
++		btrfs_finish_extent_commit(trans, fs_info->extent_root,
++					   &fs_info->pinned_extents);
++
+ 	btrfs_free_transaction(root, trans);
+ 	free_extent_buffer(root->commit_root);
+ 	root->commit_root = NULL;
+-- 
+1.8.4
+

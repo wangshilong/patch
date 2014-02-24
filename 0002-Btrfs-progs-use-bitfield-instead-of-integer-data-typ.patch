@@ -1,0 +1,33 @@
+From 14612f254c0cdcb08d4865501b590d8fa44c3c15 Mon Sep 17 00:00:00 2001
+From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+Date: Tue, 25 Feb 2014 00:29:01 +0800
+Subject: [PATCH 2/2] Btrfs-progs: use bitfield instead of integer data type
+ for flags in fs_info
+
+Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+---
+ ctree.h | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/ctree.h b/ctree.h
+index 1144a59..21c9483 100644
+--- a/ctree.h
++++ b/ctree.h
+@@ -985,9 +985,11 @@ struct btrfs_fs_info {
+ 	struct list_head space_info;
+ 	int system_allocs;
+ 	int readonly;
+-	int on_restoring;
+-	int is_chunk_recover;
+-	int fsck_init_extent_tree;
++
++	unsigned int on_restoring:1;
++	unsigned int is_chunk_recover:1;
++	unsigned int fsck_init_extent_tree:1;
++
+ 	int (*free_extent_hook)(struct btrfs_trans_handle *trans,
+ 				struct btrfs_root *root,
+ 				u64 bytenr, u64 num_bytes, u64 parent,
+-- 
+1.8.4
+
