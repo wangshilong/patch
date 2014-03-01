@@ -1,0 +1,85 @@
+From 6a14ab7a538c1e0f9192ed166c5183e7639bcf57 Mon Sep 17 00:00:00 2001
+From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+Date: Sat, 1 Mar 2014 14:34:59 +0800
+Subject: [PATCH 3/3] Btrfs-progs: fsck: deal with really corrupted extent tree
+
+We may have a really corrupted extent tree, so we can't really
+rely on existed extent tree to cache block group.
+
+During test, we fail to reinit extent tree which is because we
+can not find a free extent so let's make block group cache ourselves
+firstly.
+
+Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+---
+ cmds-check.c | 26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
+
+diff --git a/cmds-check.c b/cmds-check.c
+index e431ae1..ba544df 100644
+--- a/cmds-check.c
++++ b/cmds-check.c
+@@ -6053,11 +6053,13 @@ static int pin_metadata_blocks(struct btrfs_fs_info *fs_info)
+ 
+ static int reset_block_groups(struct btrfs_fs_info *fs_info)
+ {
++	struct btrfs_block_group_cache *cache;
+ 	struct btrfs_path *path;
+ 	struct extent_buffer *leaf;
+ 	struct btrfs_chunk *chunk;
+ 	struct btrfs_key key;
+ 	int ret;
++	u64 start;
+ 
+ 	path = btrfs_alloc_path();
+ 	if (!path)
+@@ -6108,8 +6110,20 @@ static int reset_block_groups(struct btrfs_fs_info *fs_info)
+ 				      btrfs_chunk_type(leaf, chunk),
+ 				      key.objectid, key.offset,
+ 				      btrfs_chunk_length(leaf, chunk));
++		set_extent_dirty(&fs_info->free_space_cache, key.offset,
++				 key.offset + btrfs_chunk_length(leaf, chunk),
++				 GFP_NOFS);
+ 		path->slots[0]++;
+ 	}
++	start = 0;
++	while (1) {
++		cache = btrfs_lookup_first_block_group(fs_info, start);
++		if (!cache)
++			break;
++		if (cache->cached)
++			cache->cached = 1;
++		start = cache->key.objectid + cache->key.offset;
++	}
+ 
+ 	btrfs_free_path(path);
+ 	return 0;
+@@ -6263,12 +6277,6 @@ static int reinit_extent_tree(struct btrfs_trans_handle *trans,
+ 		return ret;
+ 	}
+ 
+-	ret = reset_balance(trans, fs_info);
+-	if (ret) {
+-		fprintf(stderr, "error reseting the pending balance\n");
+-		return ret;
+-	}
+-
+ 	/* Ok we can allocate now, reinit the extent root */
+ 	ret = btrfs_fsck_reinit_root(trans, fs_info->extent_root, 0);
+ 	if (ret) {
+@@ -6303,7 +6311,11 @@ static int reinit_extent_tree(struct btrfs_trans_handle *trans,
+ 		btrfs_extent_post_op(trans, fs_info->extent_root);
+ 	}
+ 
+-	return 0;
++	ret = reset_balance(trans, fs_info);
++	if (ret)
++		fprintf(stderr, "error reseting the pending balance\n");
++
++	return ret;
+ }
+ 
+ static int recow_extent_buffer(struct btrfs_root *root, struct extent_buffer *eb)
+-- 
+1.9.0
+

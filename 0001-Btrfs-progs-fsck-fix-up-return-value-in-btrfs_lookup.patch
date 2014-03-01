@@ -1,0 +1,33 @@
+From 56b054ba943fbc3bc04998b217b10497d216d6a2 Mon Sep 17 00:00:00 2001
+From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+Date: Fri, 28 Feb 2014 13:24:37 +0800
+Subject: [PATCH 1/3] Btrfs-progs: fsck: fix up return value in
+ btrfs_lookup_extent_info()
+
+btrfs_lookup_extent_info() blindly return 0 which is not right.
+For some cases, btrfsck have to deal with corrupt extent item or
+extent tree.(For example --init-extent-tree).
+
+So let's do deal with this in the right way firstly.
+
+Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+---
+ extent-tree.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/extent-tree.c b/extent-tree.c
+index 7860d1d..7979457 100644
+--- a/extent-tree.c
++++ b/extent-tree.c
+@@ -1560,7 +1560,7 @@ again:
+ 		*flags = extent_flags;
+ out:
+ 	btrfs_free_path(path);
+-	return 0;
++	return ret;
+ }
+ 
+ int btrfs_set_block_flags(struct btrfs_trans_handle *trans,
+-- 
+1.9.0
+
